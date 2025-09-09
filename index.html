@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Take2Cash</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+</head>
+<body class="bg-gradient-to-b from-purple-100 to-purple-50 min-h-screen p-4">
+
+<h1 class="text-center text-3xl font-bold text-purple-700 mb-6">Take2Cash</h1>
+
+<!-- Admin Login Section -->
+<div id="adminLoginDiv" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg mb-6">
+<h2 class="font-bold mb-4 text-xl text-purple-600">Admin Login</h2>
+<input id="adminEmail" placeholder="Admin Email" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="adminPass" type="password" placeholder="Admin Password" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<button id="adminLoginBtn" class="w-full bg-purple-600 text-white p-3 rounded-lg mb-3 hover:bg-purple-700">Login as Admin</button>
+<div id="adminMsg" class="text-red-500 text-sm mt-1 text-center"></div>
+</div>
+
+<!-- User Login/Signup Section -->
+<div id="authSection" class="max-w-md mx-auto bg-white p-6 rounded-2xl shadow-lg">
+<h2 class="font-bold mb-4 text-xl text-purple-600">Signup / Login</h2>
+<input id="name" placeholder="Name (for signup)" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="email" type="email" placeholder="Email" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="pass" type="password" placeholder="Password" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="referral" placeholder="Friend UID (optional)" class="w-full border p-3 mb-3 rounded-lg focus:ring-2 focus:ring-purple-400">
+<button id="signupBtn" class="w-full bg-purple-600 text-white p-3 rounded-lg mb-3 hover:bg-purple-700">Sign Up</button>
+<button id="loginBtn" class="w-full bg-green-500 text-white p-3 rounded-lg mb-2 hover:bg-green-600">Log In</button>
+<div id="msg" class="text-red-500 text-sm mt-1 text-center"></div>
+</div>
+
+<!-- User Dashboard -->
+<div id="dashSection" class="hidden max-w-md mx-auto mt-6 bg-white p-6 rounded-2xl shadow-lg">
+<h2 class="font-bold text-purple-700 text-xl mb-3">Dashboard</h2>
+<p>Hi, <span id="userName">—</span></p>
+<p>Balance: <span id="balance">0 Taka</span></p>
+<p>Your Referral ID: <span id="userUID">—</span></p>
+
+<button id="activateBtn" class="w-full bg-green-500 text-white p-3 rounded-lg mb-3 hover:bg-green-600">Activate Account (300 Taka)</button>
+<p id="activationStatus" class="text-sm text-gray-500 mb-3">Not active</p>
+
+<h3 class="font-bold mt-2 mb-2 text-purple-600">Spin Game</h3>
+<button id="spinBtn" class="w-full bg-yellow-400 text-white p-3 rounded-lg mb-2 hover:bg-yellow-500">Spin</button>
+<p id="spinStatus" class="text-sm text-gray-500 mb-3"></p>
+
+<h3 class="font-bold mt-2 mb-2 text-purple-600">Daily Reward</h3>
+<button id="dailyRewardBtn" class="w-full bg-yellow-400 text-white p-3 rounded-lg mb-2 hover:bg-yellow-500">Claim 5 Taka</button>
+<p id="dailyRewardStatus" class="text-sm text-gray-500 mb-3"></p>
+
+<h3 class="font-bold mt-2 mb-2 text-purple-600">Withdraw</h3>
+<input id="withdrawPhone" placeholder="Phone number" class="w-full border p-3 mb-2 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="withdrawAmount" placeholder="Amount" class="w-full border p-3 mb-2 rounded-lg focus:ring-2 focus:ring-purple-400">
+<button id="withdrawBtn" class="w-full bg-blue-500 text-white p-3 rounded-lg mb-2 hover:bg-blue-600">Submit Withdraw</button>
+<p id="withdrawStatus" class="text-sm text-gray-500 mb-3"></p>
+
+<h3 class="font-bold mt-2 mb-2 text-purple-600">Deposit</h3>
+<p class="mb-2 text-sm">Send money to Bkash: <span class="font-bold">01312106894</span></p>
+<input id="depositPhone" placeholder="Sender number" class="w-full border p-3 mb-2 rounded-lg focus:ring-2 focus:ring-purple-400">
+<input id="depositAmount" placeholder="Amount" class="w-full border p-3 mb-2 rounded-lg focus:ring-2 focus:ring-purple-400">
+<button id="depositBtn" class="w-full bg-green-500 text-white p-3 rounded-lg mb-3 hover:bg-green-600">Submit Deposit</button>
+<p id="depositStatus" class="text-sm text-gray-500 mb-3"></p>
+
+<button id="logoutBtn" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600">Logout</button>
+</div>
+
+<!-- Admin Panel -->
+<div id="adminPanel" class="hidden max-w-4xl mx-auto mt-6">
+<h2 class="text-xl font-bold text-purple-700 mb-4">Admin Dashboard</h2>
+
+<!-- Withdraw Requests -->
+<div class="bg-white p-4 rounded-2xl shadow mb-4">
+<h3 class="font-bold text-purple-600 mb-2">Withdraw Requests</h3>
+<table class="w-full text-left table-auto border">
+<thead class="bg-purple-100">
+<tr>
+<th class="px-2 py-1 border">UID</th>
+<th class="px-2 py-1 border">Phone</th>
+<th class="px-2 py-1 border">Amount</th>
+<th class="px-2 py-1 border">Status</th>
+<th class="px-2 py-1 border">Action</th>
+</tr>
+</thead>
+<tbody id="withdrawTable" class="divide-y"></tbody>
+</table>
+</div>
+
+<!-- Deposit Requests -->
+<div class="bg-white p-4 rounded-2xl shadow mb-4">
+<h3 class="font-bold text-green-600 mb-2">Deposit Requests</h3>
+<table class="w-full text-left table-auto border">
+<thead class="bg-green-100">
+<tr>
+<th class="px-2 py-1 border">UID</th>
+<th class="px-2 py-1 border">Sender</th>
+<th class="px-2 py-1 border">Amount</th>
+<th class="px-2 py-1 border">Status</th>
+<th class="px-2 py-1 border">Action</th>
+</tr>
+</thead>
+<tbody id="depositTable" class="divide-y"></tbody>
+</table>
+</div>
+
+<button id="adminLogoutBtn" class="w-full bg-red-500 text-white p-3 rounded-lg hover:bg-red-600 mb-6">Logout Admin</button>
+
+<script>
+// Firebase config
+var firebaseConfig = {
+    apiKey: "AIzaSyCf3PHTZHHBDvfx3Eeju4wRqGC0UNGfix4",
+    authDomain: "take2cashbot.firebaseapp.com",
+    projectId: "take2cashbot",
+    storageBucket: "take2cashbot.firebasestorage.app",
+    messagingSenderId: "1061709627457",
+    appId: "1:1061709627457:web:af16302a2d569641b186c0"
+};
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth();
+var db = firebase.firestore();
+
+const ADMIN_EMAIL='nafishrahman001@gmail.com';
+const ADMIN_PASS='nafish@@##1122';
+
+function showMsg(el,text){el.innerText=text;}
+
+// ===== Admin Scripts =====
+document.getElementById('adminLoginBtn').onclick=function(){
+    var email=document.getElementById('adminEmail').value;
+    var pass=document.getElementById('adminPass').value;
+    if(email===ADMIN_EMAIL && pass===ADMIN_PASS){
+        document.getElementById('adminLoginDiv').classList.add('hidden');
+        document.getElementById('adminPanel').classList.remove('hidden');
+        showMsg(document.getElementById('adminMsg'),'Admin logged in!');
+        loadWithdrawRequests();
+        loadDepositRequests();
+    }else showMsg(document.getElementById('adminMsg'),'Invalid admin');
+};
+
+document.getElementById('adminLogoutBtn').onclick=function(){
+    document.getElementById('adminPanel').classList.add('hidden');
+    document.getElementById('adminLoginDiv').classList.remove('hidden');
+    showMsg(document.getElementById('adminMsg'),'Admin logged out');
+}
+
+// Withdraw/Deposit load & approve/reject
+function loadWithdrawRequests(){
+    var wTable=document.getElementById('withdrawTable'); wTable.innerHTML='';
+    db.collection('withdraws').get().then(snap=>{
+        snap.forEach(doc=>{
+            var d=doc.data();
+            var tr=document.createElement('tr');
+            tr.innerHTML=`<td class="px-2 py-1 border">${d.uid}</td>
+            <td class="px-2 py-1 border">${d.phone}</td>
+            <td class="px-2 py-1 border">${d.amount}</td>
+            <td class="px-2 py-1 border">${d.status}</td>
+            <td class="px-2 py-1 border">
+              <button class="bg-green-500 text-white px-2 py-1 rounded mr-1" onclick="approveWithdraw('${doc.id}','${d.uid}',${d.amount})">Approve</button>
+              <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="rejectWithdraw('${doc.id}')">Reject</button>
+            </td>`;
+            wTable.appendChild(tr);
+        });
+    });
+}
+window.approveWithdraw=function(id,uid,amount){
+    var userRef=db.collection('users').doc(uid);
+    userRef.get().then(doc=>{
+        var balance=doc.data().balance;
+        if(balance>=amount){
+            userRef.update({balance:balance-amount}).then(()=>{
+                db.collection('withdraws').doc(id).update({status:'approved'});
+                loadWithdrawRequests();
+                alert("Withdraw approved & balance deducted!");
+            });
+        }else alert("Insufficient balance for this user!");
+    });
+}
+window.rejectWithdraw=function(id){ db.collection('withdraws').doc(id).update({status:'rejected'}).then(loadWithdrawRequests); }
+
+function loadDepositRequests(){
+    var dTable=document.getElementById('depositTable'); dTable.innerHTML='';
+    db.collection('deposits').get().then(snap=>{
+        snap.forEach(doc=>{
+            var d=doc.data();
+            var tr=document.createElement('tr');
+            tr.innerHTML=`<td class="px-2 py-1 border">${d.uid}</td>
+            <td class="px-2 py-1 border">${d.sender}</td>
+            <td class="px-2 py-1 border">${d.amount}</td>
+            <td class="px-2 py-1 border">${d.status}</td>
+            <td class="px-2 py-1 border">
+              <button class="bg-green-500 text-white px-2 py-1 rounded mr-1" onclick="approveDeposit('${doc.id}')">Approve</button>
+              <button class="bg-red-500 text-white px-2 py-1 rounded" onclick="rejectDeposit('${doc.id}')">Reject</button>
+            </td>`;
+            dTable.appendChild(tr);
+        });
+    });
+}
+window.approveDeposit=function(id){
+    db.collection('deposits').doc(id).get().then(doc=>{
+        var d=doc.data();
+        db.collection('users').doc(d.uid).get().then(u=>{
+            var uData=u.data();
+            db.collection('users').doc(d.uid).update({balance:uData.balance+d.amount});
+            db.collection('deposits').doc(id).update({status:'approved'});
+            loadDepositRequests();
+        });
+    });
+}
+window.rejectDeposit=function(id){ db.collection('deposits').doc(id).update({status:'rejected'}).then(loadDepositRequests); }
+
+// ===== User Panel Scripts =====
+
+// Signup
+document.getElementById('signupBtn').onclick = function(){
+    var name=document.getElementById('name').value;
+    var email=document.getElementById('email').value;
+    var pass=document.getElementById('pass').value;
+    var referral=document.getElementById('referral').value;
+    if(!name||!email||!pass){ showMsg(document.getElementById('msg'),'Enter all fields'); return; }
+    auth.createUserWithEmailAndPassword(email,pass).then(cred=>{
+        db.collection('users').doc(cred.user.uid).set({name:name,balance:0,active:false,referrer:referral});
+        showMsg(document.getElementById('msg'),'Signup successful!');
+    }).catch(err=>showMsg(document.getElementById('msg'),err.message));
+}
+
+// Login
+document.getElementById('loginBtn').onclick=function(){
+    var email=document.getElementById('email').value;
+    var pass=document.getElementById('pass').value;
+    auth.signInWithEmailAndPassword(email,pass).then(cred=>{
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('dashSection').classList.remove('hidden');
+        loadDashboard(cred.user.uid);
+    }).catch(err=>showMsg(document.getElementById('msg'),err.message));
+}
+
+// Logout
+document.getElementById('logoutBtn').onclick=function(){
+    auth.signOut();
+    document.getElementById('dashSection').classList.add('hidden');
+    document.getElementById('authSection').classList.remove('hidden');
+    showMsg(document.getElementById('msg'),'Logged out');
+}
+
+// Load Dashboard
+function loadDashboard(uid){
+    db.collection('users').doc(uid).get().then(doc=>{
+        var data=doc.data();
+        document.getElementById('userName').innerText=data.name;
+        document.getElementById('balance').innerText=data.balance + " Taka";
+        document.getElementById('userUID').innerText=uid;
+        if(data.active){
+            document.getElementById('activationStatus').innerText='Active';
+            document.getElementById('activateBtn').style.display='none';
+        }
+    });
+}
+
+// Activate Account
+document.getElementById('activateBtn').onclick=function(){
+    var uid=document.getElementById('userUID').innerText;
+    db.collection('users').doc(uid).get().then(doc=>{
+        var balance=doc.data().balance;
+        if(balance>=300){
+            db.collection('users').doc(uid).update({balance:balance-300,active:true});
+            document.getElementById('activationStatus').innerText='Active';
+            document.getElementById('activateBtn').style.display='none';
+            loadDashboard(uid);
+        }else alert('Not enough balance to activate');
+    });
+}
+
+// Daily Reward
+document.getElementById('dailyRewardBtn').onclick=function(){
+    var uid=document.getElementById('userUID').innerText;
+    var today=new Date().toDateString();
+    var key='lastDaily_'+uid;
+    if(localStorage.getItem(key)===today){ alert('Already claimed today'); return; }
+    db.collection('users').doc(uid).get().then(doc=>{
+        var b=doc.data().balance;
+        db.collection('users').doc(uid).update({balance:b+5});
+        loadDashboard(uid);
+        localStorage.setItem(key,today);
+        document.getElementById('dailyRewardStatus').innerText='5 Taka added!';
+    });
+}
+
+// Spin
+document.getElementById('spinBtn').onclick=function(){
+    var uid=document.getElementById('userUID').innerText;
+    db.collection('users').doc(uid).get().then(doc=>{
+        if(!doc.data().active){ alert('Activate your account first'); return; }
+        var b=doc.data().balance;
+        var reward=Math.random()<0.5?5:10;
+        db.collection('users').doc(uid).update({balance:b+reward});
+        loadDashboard(uid);
+        document.getElementById('spinStatus').innerText=reward+' Taka added!';
+    });
+}
+
+</script>
+</body>
+</html>
